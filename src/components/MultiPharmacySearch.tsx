@@ -1,76 +1,82 @@
-import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Package, ArrowUpDown, Store, RefreshCw, Brain } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, MapPin, Store, CheckCircle, XCircle, Phone } from 'lucide-react';
 import type { Medicine } from '../hooks/useInventory';
-import { NetworkStockService, type NetworkSearchResult } from '../services/NetworkStockService';
 
 interface Props {
   inventory: Medicine[];
 }
 
+// Simulated data for nearby pharmacies and their medicines
+const NEARBY_PHARMACIES = [
+  {
+    id: 1,
+    name: 'Apollo Pharmacy',
+    distance: '1.2 km',
+    contact: '+1 234 567 8900',
+    medicines: ['Paracetamol', 'Azithromycin', 'Vitamin D', 'Cough Syrup', 'Antibiotics']
+  },
+  {
+    id: 2,
+    name: 'City Care Meds',
+    distance: '2.5 km',
+    contact: '+1 234 567 8901',
+    medicines: ['Ibuprofen', 'Cetirizine', 'Cough Syrup', 'Insulin', 'Metformin']
+  },
+  {
+    id: 3,
+    name: 'Wellness Hub',
+    distance: '3.0 km',
+    contact: '+1 234 567 8902',
+    medicines: ['Amoxicillin', 'Lisinopril', 'Aspirin', 'Vitamin D']
+  },
+  {
+    id: 4,
+    name: 'QuickHealth Pharmacy',
+    distance: '0.8 km',
+    contact: '+1 234 567 8903',
+    medicines: ['Omeprazole', 'Cough Syrup', 'Painkillers', 'First Aid Kit']
+  }
+];
+
 const MultiPharmacySearch: React.FC<Props> = ({ inventory }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [networkResults, setNetworkResults] = useState<NetworkSearchResult[]>([]);
-  const [sortBy, setSortBy] = useState<'distance' | 'stock' | 'ai'>('ai');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
+  // Array to store current store medicines
+  const currentStoreMedicines = inventory.map(m => m.name.toLowerCase());
 
-  useEffect(() => {
-    if (!debouncedSearch) {
-      setNetworkResults([]);
-      return;
-    }
-    
-    let isMounted = true;
-    setIsSearching(true);
-    
-    NetworkStockService.searchNetworkStock(debouncedSearch).then(results => {
-      if (isMounted) {
-        setNetworkResults(results);
-        setIsSearching(false);
-      }
-    });
-    
-    return () => { isMounted = false; };
-  }, [debouncedSearch]);
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchQuery(searchTerm.trim());
+  };
 
-  const localMeds = debouncedSearch ? inventory.filter(m => 
-    m.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
-    m.category.toLowerCase().includes(debouncedSearch.toLowerCase())
-  ) : [];
+  // Logic to simulate checking availability
+  const isAvailableLocally = searchQuery 
+    ? currentStoreMedicines.some(m => m.includes(searchQuery.toLowerCase()))
+    : false;
 
-  const sortedNetworkResults = [...networkResults].sort((a, b) => {
-    if (sortBy === 'ai') {
-      return (b.medicine.recommendationScore ?? 0) - (a.medicine.recommendationScore ?? 0);
-    }
-    if (sortBy === 'distance') {
-      return a.pharmacy.distance - b.pharmacy.distance;
-    }
-    return b.medicine.stockQuantity - a.medicine.stockQuantity;
-  });
+  const nearbyResults = searchQuery
+    ? NEARBY_PHARMACIES.filter(p => 
+        p.medicines.some(m => m.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : [];
 
   return (
     <div className="animate-up" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       <section className="glass" style={{ borderRadius: 'var(--radius-xl)', padding: '2rem' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Global Pharmacy Network</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>Search for medicine availability across our partner pharmacy network.</p>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Network Search</h2>
+            <p style={{ color: 'var(--text-secondary)' }}>Nearby Pharmacy Availability</p>
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: 'var(--radius-lg)' }}>
+          <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '0.5rem', borderRadius: 'var(--radius-lg)' }}>
             <div style={{ padding: '0 1rem' }}>
               <Search size={24} color="var(--text-muted)" />
             </div>
             <input 
               type="text"
-              placeholder="Enter medicine name..."
+              placeholder="Search for a medicine..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
@@ -83,166 +89,116 @@ const MultiPharmacySearch: React.FC<Props> = ({ inventory }) => {
                 padding: '0.75rem 0'
               }}
             />
-            {isSearching && (
-              <RefreshCw className="spin" size={24} color="var(--accent-primary)" style={{ marginRight: '1rem' }} />
-            )}
-          </div>
+            <button 
+              type="submit"
+              className="glass"
+              style={{
+                background: 'var(--accent-primary)',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 1.75rem',
+                borderRadius: 'var(--radius-md)',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Search
+            </button>
+          </form>
         </div>
       </section>
 
-      {debouncedSearch && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '2rem' }}>
-          
-          {/* Local Stock Section */}
-          <section>
-            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Store color="var(--accent-primary)" />
-              My Pharmacy Stock
-            </h3>
-            {localMeds.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
-                {localMeds.map(med => (
-                  <div key={med.id} className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', borderLeft: '4px solid var(--accent-primary)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <span style={{ fontWeight: 600, fontSize: '1.125rem' }}>{med.name}</span>
-                      <span style={{ 
-                        background: med.quantity <= med.minStock ? 'var(--accent-alert)' : 'var(--accent-success)', 
-                        padding: '0.25rem 0.5rem', 
-                        borderRadius: '1rem', 
-                        fontSize: '0.75rem', 
-                        fontWeight: 700,
-                        color: 'white'
-                      }}>
-                        {med.quantity} {med.unit}
-                      </span>
-                    </div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                      Category: {med.category}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="glass" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', borderRadius: 'var(--radius-lg)' }}>
-                No local stock found for "{debouncedSearch}"
-              </div>
-            )}
-          </section>
+      {searchQuery && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Results displaying below search bar */}
 
-          {/* Network Stock Section */}
-          <section>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1rem' }}>
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Package color="var(--accent-secondary)" />
-                Nearby Pharmacies
-              </h3>
-              
-              <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.875rem' }}>
-                <button 
-                  onClick={() => setSortBy('ai')}
-                  style={{ 
-                    background: sortBy === 'ai' ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-extra))' : 'transparent',
-                    color: sortBy === 'ai' ? 'white' : 'var(--text-secondary)',
-                    padding: '0.5rem 1rem', 
-                    borderRadius: 'var(--radius-md)',
-                    border: sortBy === 'ai' ? 'none' : '1px solid var(--border-color)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                    fontWeight: sortBy === 'ai' ? 600 : 400
-                  }}
-                >
-                  <Brain size={16} /> AI Recommended
-                </button>
-                <button 
-                  onClick={() => setSortBy('distance')}
-                  style={{ 
-                    background: sortBy === 'distance' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                    color: sortBy === 'distance' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    padding: '0.5rem 1rem', 
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-color)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem'
-                  }}
-                >
-                  <MapPin size={16} /> Distance
-                </button>
-                <button 
-                  onClick={() => setSortBy('stock')}
-                  style={{ 
-                    background: sortBy === 'stock' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                    color: sortBy === 'stock' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    padding: '0.5rem 1rem', 
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-color)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem'
-                  }}
-                >
-                  <ArrowUpDown size={16} /> Stock Level
-                </button>
+          {isAvailableLocally ? (
+            <section className="glass animate-up" style={{ padding: '1.5rem 2rem', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '4px solid #10b981' }}>
+              <CheckCircle size={32} color="#10b981" />
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#10b981' }}>
+                  Available in your store
+                </h3>
+                <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem', fontSize: '0.925rem' }}>
+                  The medicine "{searchQuery}" is currently in stock locally.
+                </p>
               </div>
-            </div>
+            </section>
+          ) : (
+            <section className="glass animate-up" style={{ padding: '1.5rem 2rem', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', gap: '1rem', borderLeft: '4px solid #ef4444' }}>
+              <XCircle size={32} color="#ef4444" />
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#ef4444' }}>
+                  Not available in this store
+                </h3>
+                <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem', fontSize: '0.925rem' }}>
+                  "{searchQuery}" is out of stock here. Showing availability at nearby pharmacies below.
+                </p>
+              </div>
+            </section>
+          )}
 
-            {isSearching && networkResults.length === 0 ? (
-              <div className="glass" style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)', borderRadius: 'var(--radius-lg)' }}>
-                Searching global network...
-              </div>
-            ) : sortedNetworkResults.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1rem' }}>
-                {sortedNetworkResults.map((result, idx) => (
-                  <div key={idx} className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                      <div>
-                        <h4 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--accent-secondary)' }}>{result.pharmacy.name}</h4>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                          <MapPin size={14} />
-                          {result.pharmacy.distance} km away • {result.pharmacy.location}
+          {!isAvailableLocally && (
+            <section className="animate-up">
+              {nearbyResults.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                  {nearbyResults.map((pharmacy) => (
+                    <div key={pharmacy.id} className="glass" style={{ padding: '1.5rem', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#10b981' }}></div>
+                      
+                      <div style={{ paddingLeft: '0.5rem' }}>
+                        <h4 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>{pharmacy.name}</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+                          <MapPin size={16} color="var(--accent-primary)" />
+                          {pharmacy.distance} away
                         </div>
-                      </div>
-                      {result.medicine.recommendationScore !== undefined && (
+                        
                         <div style={{ 
-                          display: 'flex', 
+                          display: 'inline-flex', 
                           alignItems: 'center', 
-                          gap: '0.25rem', 
-                          background: 'rgba(99, 102, 241, 0.15)', 
-                          color: 'var(--accent-primary)', 
-                          padding: '0.25rem 0.5rem', 
-                          borderRadius: '1rem', 
-                          fontSize: '0.75rem', 
-                          fontWeight: 700 
+                          gap: '0.375rem', 
+                          background: 'rgba(16, 185, 129, 0.1)', 
+                          color: '#10b981', 
+                          padding: '0.375rem 0.75rem', 
+                          borderRadius: '2rem', 
+                          fontSize: '0.875rem', 
+                          fontWeight: 600 
                         }}>
-                          <Brain size={14} />
-                          Match: {Math.round(result.medicine.recommendationScore * 100)}%
+                          <CheckCircle size={16} />
+                          Available
                         </div>
-                      )}
-                    </div>
-                    
-                    <div style={{ background: 'rgba(0,0,0,0.15)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                        <span style={{ fontWeight: 500 }}>{result.medicine.medicineName}</span>
-                        <span style={{ fontWeight: 700, color: 'white' }}>{result.medicine.stockQuantity} in stock</span>
                       </div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                        {result.medicine.composition} • Expires: {new Date(result.medicine.expiryDate).toLocaleDateString()}
-                      </div>
-                    </div>
 
-                    <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                      Contact: {result.pharmacy.contact}
+                      <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                          <Phone size={16} />
+                          {pharmacy.contact}
+                        </div>
+                        <button style={{
+                          background: 'rgba(255,255,255,0.05)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          padding: '0.5rem 1rem',
+                          borderRadius: 'var(--radius-md)',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}>
+                          Contact
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : !isSearching ? (
-              <div className="glass" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)', borderRadius: 'var(--radius-lg)' }}>
-                No partner pharmacies have this item in stock.
-              </div>
-            ) : null}
-          </section>
+                  ))}
+                </div>
+              ) : (
+                <div className="glass" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)', borderRadius: 'var(--radius-lg)' }}>
+                  No nearby pharmacies have this medicine in stock either.
+                </div>
+              )}
+            </section>
+          )}
+
         </div>
       )}
     </div>

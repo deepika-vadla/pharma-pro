@@ -26,6 +26,8 @@ import SubstitutesFinder from './components/SubstitutesFinder';
 import InteractionChecker from './components/InteractionChecker';
 import SplashWelcome from './components/SplashWelcome';
 import MultiPharmacySearch from './components/MultiPharmacySearch';
+import ExpiryManagement from './components/ExpiryManagement';
+import StockAnalysis from './components/StockAnalysis';
 
 import './index.css';
 
@@ -206,58 +208,9 @@ const App: React.FC = () => {
           </section>
         );
       case 'expiry':
-        const allExpiryItems = [...expiredItems, ...expiringSoonItems];
-        return (
-          <section className="glass animate-up" style={{ borderRadius: 'var(--radius-xl)', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3>Expiry Alerts</h3>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{allExpiryItems.length} items need attention</span>
-            </div>
-            {allExpiryItems.length === 0 ? (
-              <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '4rem' }}>
-                <AlertTriangle size={48} style={{ marginBottom: '1rem', opacity: 0.2 }} />
-                <p>No expiry alerts at this time.</p>
-              </div>
-            ) : (
-              <InventoryTable
-                inventory={allExpiryItems}
-                onEdit={handleEditClick}
-                onDelete={deleteMedicine}
-              />
-            )}
-          </section>
-        );
+        return <ExpiryManagement inventory={inventory} onDelete={deleteMedicine} />;
       case 'stock':
-        return (
-          <section className="glass animate-up" style={{ borderRadius: 'var(--radius-xl)', padding: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <div>
-                <h3 style={{ marginBottom: '0.25rem' }}>Stock Reports</h3>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{lowStockItems.length} items at or below minimum stock</span>
-              </div>
-              <button
-                onClick={handlePrint}
-                className="no-print"
-                style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-              >
-                <Printer size={18} />
-                Print Report
-              </button>
-            </div>
-            {lowStockItems.length === 0 ? (
-              <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '4rem' }}>
-                <TrendingDown size={48} style={{ marginBottom: '1rem', opacity: 0.2 }} />
-                <p>All stock levels are healthy.</p>
-              </div>
-            ) : (
-              <InventoryTable
-                inventory={lowStockItems}
-                onEdit={handleEditClick}
-                onDelete={deleteMedicine}
-              />
-            )}
-          </section>
-        );
+        return <StockAnalysis inventory={inventory} salesHistory={salesHistory} />;
       case 'settings':
         return (
           <section className="glass animate-up" style={{ borderRadius: 'var(--radius-xl)', padding: '2.5rem', maxWidth: '800px' }}>

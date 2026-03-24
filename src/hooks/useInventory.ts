@@ -12,6 +12,8 @@ export interface Medicine {
     batchNumber: string;
     price: number;
     lastUpdated: string;
+    supplierName?: string;
+    storageLocation?: string;
 }
 
 export interface SaleRecord {
